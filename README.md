@@ -1,9 +1,12 @@
-# HealthTick - Healthcare Coaching Calendar
+# HealthTick - Healthcare Coaching Calendar    
 
 A professional calendar booking application designed specifically for healthcare coaches to manage client appointments with intelligent scheduling and conflict prevention.
 
+- Demo Link : https://calendar-booking-beta.vercel.app/
 ## OverView
 
+
+### Note -> Please click on the day or date to see the available slots and book a slot or check for conflicts.
 
 ## Features
 
@@ -62,14 +65,29 @@ src/
 │   └── TimeSlot.tsx        # Individual time slot component
 ├── contexts/            # React contexts
 │   └── ThemeContext.tsx    # Theme management
-├── data/               # Static data
-│   └── clients.ts          # Dummy client data
 ├── types/              # TypeScript definitions
 │   └── index.ts           # All type definitions
 ├── utils/              # Utility functions
 │   └── timeSlots.ts       # Time slot generation and validation
 └── App.tsx             # Main application component
 ```
+ ### ScreenShorts
+ - Dark Mode HomePage
+<img width="1915" height="911" alt="Screenshot 2025-07-22 233423" src="https://github.com/user-attachments/assets/8be8e5c8-de32-4862-9ba9-36edffb1cbaa" />
+ - Light mode View
+   <img width="1913" height="844" alt="Screenshot 2025-07-22 233556" src="https://github.com/user-attachments/assets/9b0e63ca-3101-4a57-b17c-4216e3f81181" />
+   
+<img width="1917" height="913" alt="Screenshot 2025-07-22 233606" src="https://github.com/user-attachments/assets/76f70bf9-3ac5-4d8a-9466-f77f9c06780c" />
+
+<img width="1918" height="916" alt="Screenshot 2025-07-22 233452" src="https://github.com/user-attachments/assets/2234cfe6-e574-4eb1-b722-c6250a8b9d94" />
+- Calendar Page View
+<img width="1919" height="910" alt="Screenshot 2025-07-22 233510" src="https://github.com/user-attachments/assets/006f60c2-002e-4db8-a611-ea4c4749186f" />
+-Slot View
+<img width="1919" height="886" alt="Screenshot 2025-07-22 233523" src="https://github.com/user-attachments/assets/e91e6e3e-8182-4778-a26e-91885b02c060" /><img width="1912" height="898" alt="Screenshot 2025-07-22 235832" src="https://github.com/user-attachments/assets/d8291e2a-063b-440f-aa54-6c82c0719771" />
+
+<img width="807" height="606" alt="Screenshot 2025-07-22 235815" src="https://github.com/user-attachments/assets/0076a581-d6ad-46f7-883b-e61a085b646b" />
+-Call Booking Form
+<img width="1608" height="811" alt="Screenshot 2025-07-22 233539" src="https://github.com/user-attachments/assets/1aee6dd7-4342-439e-9ef2-5a08776ab9e6" />
 
 ### Data Models
 
@@ -159,7 +177,7 @@ interface Call {
 ### Installation
 ```bash
 # Clone the repository
-git clone [[<repository-url>](https://github.com/Anuragsingh198/CalendarBooking)](https://github.com/Anuragsingh198/CalendarBooking)
+- git clone https://github.com/Anuragsingh198/CalendarBooking
 
 # Install dependencies
 npm install
@@ -173,9 +191,9 @@ npm run dev
 ## Deployment
 
 ## Deployment 
-frontend Link : https://calendar-booking-beta.vercel.app/
+Demo Link : https://calendar-booking-beta.vercel.app/
 
-### Backend Recommendations
+### Backend 
 - **Node.js with Express**
 - **Database**: MongoDB
 - **Hosting**: Railway
