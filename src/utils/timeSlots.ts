@@ -62,7 +62,7 @@ export const checkSlotAvailability = (
       return false;
     });
     
-    if (conflict && !conflictingCalls.find(c => c.id === conflict.id)) {
+    if (conflict && !conflictingCalls.find(c => c._id === conflict._id)) {
       conflictingCalls.push(conflict);
     }
   }
@@ -70,24 +70,20 @@ export const checkSlotAvailability = (
   return { available: conflictingCalls.length === 0, conflictingCalls };
 };
 
-export const getCallsForDate = (calls: Call[], date: string): Call[] => {
+export const getCallsForDate = (calls: Call[] = [], date: string): Call[] => {
+  if (!Array.isArray(calls)) return [];
+
   const selectedDate = parseISO(date);
   const dayOfWeek = getDay(selectedDate);
-  
+
   return calls.filter(call => {
-    // Include one-time calls for the exact date
-    if (!call.recurring && call.date === date) {
-      return true;
-    }
-    
-    // Include recurring calls that match the day of the week
-    if (call.recurring && call.dayOfWeek === dayOfWeek) {
-      return true;
-    }
-    
+    if (!call) return false; // just in case
+    if (!call.recurring && call.date === date) return true;
+    if (call.recurring && call.dayOfWeek === dayOfWeek) return true;
     return false;
   });
 };
+
 
 export const formatTimeSlot = (time: string): string => {
   const [hours, minutes] = time.split(':');

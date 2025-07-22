@@ -25,7 +25,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   
   const call = calls.find(c => c.time === time);
   const isOccupied = call !== undefined;
-  
+   console.log(" this is  the calls  from the  TimeSlot: ", calls)
   // Check if this slot would be affected by the hovered call type
   const wouldBeAffected = hoveredCallType && !isOccupied;
   const slotsNeeded = hoveredCallType ? getSlotsNeeded(hoveredCallType) : 0;
@@ -108,10 +108,10 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
               </div>
               
               <div className="flex items-center space-x-1 ml-2">
-                {showDeleteConfirm === call.id ? (
+                {showDeleteConfirm === call._id ? (
                   <div className="flex items-center space-x-1">
                     <button
-                      onClick={(e) => confirmDelete(call.id, e)}
+                      onClick={(e) => confirmDelete(call._id, e)}
                       className="p-1 text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors duration-200"
                       title="Confirm delete"
                     >
@@ -127,7 +127,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
                   </div>
                 ) : (
                   <button
-                    onClick={(e) => handleDeleteClick(call.id, e)}
+                    onClick={(e) => handleDeleteClick(call._id, e)}
                     className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors duration-200"
                     title="Delete call"
                   >

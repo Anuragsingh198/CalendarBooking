@@ -5,7 +5,7 @@ export interface Client {
 }
 
 export interface Call {
-  id: string;
+  _id: string;
   clientId: string;
   clientName: string;
   clientPhone: string;

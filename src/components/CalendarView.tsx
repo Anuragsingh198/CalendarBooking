@@ -5,7 +5,8 @@ import TimeSlot from './TimeSlot';
 import BookingModal from './BookingModal';
 import { Call, BookingFormData, TimeSlot as TimeSlotType } from '../types';
 import { generateTimeSlots, getCallsForDate, checkSlotAvailability, getSlotsNeeded } from '../utils/timeSlots';
-import { DUMMY_CLIENTS } from '../data/clients';
+import axios from 'axios';
+import Footer from './Footer';
 
 interface CalendarViewProps {
   onBackToHome: () => void;
@@ -21,118 +22,66 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onBackToHome }) => {
   
   const timeSlots = generateTimeSlots();
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
-  const daysCalls = getCallsForDate(calls, selectedDateString);
+  const daysCalls = getCallsForDate(calls || [], selectedDateString);
 
-  // This would be replaced with actual API calls
-  const fetchCalls = async (date: string) => {
-    setLoading(true);
-    try {
-      // Simulated API call - replace with actual backend call
-      // const response = await fetch(`/api/calls?date=${date}`);
-      // const data = await response.json();
-      
-      // For demo purposes, using mock data
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Mock some demo calls
-      const mockCalls: Call[] = [
-        {
-          id: '1',
-          clientId: '3',
-          clientName: 'Sriram Krishnan',
-          clientPhone: '+91 76543 21098',
-          date: '2025-01-16',
-          time: '11:10',
-          type: 'onboarding',
-          recurring: false,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: '2',
-          clientId: '4',
-          clientName: 'Shilpa Reddy',
-          clientPhone: '+91 65432 10987',
-          date: '2025-01-16',
-          time: '15:50',
-          type: 'followup',
-          recurring: true,
-          dayOfWeek: 4, // Thursday
-          createdAt: new Date().toISOString()
-        }
-      ];
-      
-      setCalls(mockCalls);
-    } catch (error) {
-      console.error('Failed to fetch calls:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+
+
+const fetchCalls = async (date: string) => {
+  setLoading(true);
+  try {
+    const { data } = await axios.get(`http://localhost:5001/api/calls?date=${date}`);
+    setCalls(data.calls);  
+  } catch (error) {
+    console.error('Failed to fetch calls:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleBookCall = async (data: BookingFormData) => {
-    setLoading(true);
-    try {
-      const client = DUMMY_CLIENTS.find(c => c.id === data.clientId);
-      if (!client) throw new Error('Client not found');
+  setLoading(true);
+  try {
+    const storedClients = localStorage.getItem('clients');
+    if (!storedClients) throw new Error('No clients in localStorage');
 
-      // Check for conflicts
-      const { available, conflictingCalls } = checkSlotAvailability(
-        data.time,
-        data.callType,
-        daysCalls,
-        data.date
-      );
+    const parsedClients = JSON.parse(storedClients);
+    const client = parsedClients.find((c: any) => c._id === data.clientId);
+    if (!client) throw new Error('Client not found');
 
-      if (!available) {
-        alert(`Cannot book this slot. Conflicts with: ${conflictingCalls.map(c => c.clientName).join(', ')}`);
-        return;
-      }
+    const payload = { ...data, client };
+    // console.log("before  api call is called : " , )
+    const response = await axios.post('http://localhost:5001/api/calls', payload);
 
-      // Simulated API call - replace with actual backend call
-      // const response = await fetch('/api/calls', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(data)
-      // });
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const newCall: Call = {
-        id: Date.now().toString(),
-        clientId: data.clientId,
-        clientName: client.name,
-        clientPhone: client.phone,
-        date: data.date,
-        time: data.time,
-        type: data.callType,
-        recurring: data.callType === 'followup',
-        dayOfWeek: data.callType === 'followup' ? getDay(new Date(data.date)) : undefined,
-        createdAt: new Date().toISOString()
-      };
-
-      setCalls(prev => [...prev, newCall]);
-      setBookingModalOpen(false);
-      setSelectedTime('');
-    } catch (error) {
-      console.error('Failed to book call:', error);
+    setCalls(prev => Array.isArray(prev) ? [...prev, response.data.call] : [response.data.call]);
+    setBookingModalOpen(false);
+    setSelectedTime('');
+  } catch (error: any) {
+    console.error('Failed to book call:', error);
+    if (error.response?.status === 409) {
+      console.log(" this is the error : " , error?.response?.data?.conflictingCalls)
+      alert(`Cannot book this slot. Conflicts with: ${error?.response?.data?.conflictingCalls?.map((c: any) => c.clientName).join(', ')}`);
+    } else {
       alert('Failed to book call. Please try again.');
-    } finally {
-      setLoading(false);
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const handleDeleteCall = async (callId: string) => {
-    try {
-      // Simulated API call - replace with actual backend call
-      // await fetch(`/api/calls/${callId}`, { method: 'DELETE' });
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setCalls(prev => prev.filter(c => c.id !== callId));
-    } catch (error) {
-      console.error('Failed to delete call:', error);
-      alert('Failed to delete call. Please try again.');
-    }
-  };
+
+
+const handleDeleteCall = async (callId: string) => {
+  try {
+    await axios.delete(`http://localhost:5001/api/calls/${callId}`);
+    setCalls(prev => prev.filter(c => c._id !== callId));  
+  } catch (error) {
+    console.error('Failed to delete call:', error);
+    alert('Failed to delete call. Please try again.');
+  }
+};
+
+
 
   const handleTimeSlotClick = (time: string) => {
     setSelectedTime(time);
@@ -143,30 +92,30 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onBackToHome }) => {
     fetchCalls(selectedDateString);
   }, [selectedDateString]);
 
-  const getSlotStatus = (time: string): { calls: Call[]; conflicted: boolean } => {
-    const slotCalls = daysCalls.filter(call => {
-      // Direct match
-      if (call.time === time) return true;
-      
-      // Check if this slot is occupied by a multi-slot call
-      const callSlotsNeeded = getSlotsNeeded(call.type);
-      const callStartIndex = timeSlots.indexOf(call.time);
-      const currentSlotIndex = timeSlots.indexOf(time);
-      
-      if (callStartIndex !== -1 && currentSlotIndex !== -1) {
-        return currentSlotIndex >= callStartIndex && currentSlotIndex < callStartIndex + callSlotsNeeded;
-      }
-      
-      return false;
-    });
 
-    return { calls: slotCalls, conflicted: false };
-  };
+const getSlotStatus = (time: string): { calls: Call[]; conflicted: boolean } => {
+  if (!calls || !Array.isArray(calls)) return { calls: [], conflicted: false };
+
+  const slotCalls = calls.filter(call => {
+    const callSlotsNeeded = getSlotsNeeded(call.type);
+    const callStartIndex = timeSlots.indexOf(call.time);
+    const currentSlotIndex = timeSlots.indexOf(time);
+
+    return (
+      callStartIndex !== -1 &&
+      currentSlotIndex >= callStartIndex &&
+      currentSlotIndex < callStartIndex + callSlotsNeeded
+    );
+  });
+
+  return { calls: slotCalls, conflicted: slotCalls.length > 0 };
+};
+
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+    <div className="min-h-screen bg-gray-200 dark:bg-gray-900">
+      <div className="w-[100%]  px-2 sm:px-6 lg:px-8 py-4">
+       
         <div className="mb-8">
           <button
             onClick={onBackToHome}
@@ -182,15 +131,50 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onBackToHome }) => {
           </p>
         </div>
 
-        {/* Calendar Grid */}
-        <CalendarGrid 
-          selectedDate={selectedDate} 
-          onDateSelect={setSelectedDate}
-          calls={calls}
-        />
+        
+        <div className="mt-2   dark:bg-gray-800 rounded-xl  border border-gray-200 dark:border-gray-700 p-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 m-auto ml-4">
+            Daily Summary
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-black dark:text-blue-400">
+                {daysCalls.length}
+              </div>
+              <div className="text-sm  text-black dark:text-gray-400">
+                Total Calls
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-black dark:text-green-400">
+                {daysCalls.filter(c => c.type === 'onboarding').length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Onboarding
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-black dark:text-blue-400">
+                {daysCalls.filter(c => c.type === 'followup').length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Follow-ups
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-black dark:text-gray-400">
+                {timeSlots.length - daysCalls.reduce((acc, call) => acc + getSlotsNeeded(call.type), 0)}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Available
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        {/* Selected Date Display */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+
+        <div className=" bg-slate-300 dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 mb-2">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               {format(selectedDate, 'EEEE')}
@@ -201,8 +185,14 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onBackToHome }) => {
           </div>
         </div>
 
-        {/* Call Type Hover Preview */}
-        <div className="mb-6 flex items-center justify-center space-x-4">
+        <CalendarGrid 
+          selectedDate={selectedDate} 
+          onDateSelect={setSelectedDate}
+          calls={calls}
+        />
+
+
+        <div className="mb-6 mt-6 flex items-center justify-center  space-x-4">
           <button
             onMouseEnter={() => setHoveredCallType('followup')}
             onMouseLeave={() => setHoveredCallType(null)}
@@ -219,13 +209,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onBackToHome }) => {
           </button>
         </div>
 
-        {/* Time Slots Grid */}
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full px-8 h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4  bg-slate-100 dark:bg-slate-950 p-8">
             {timeSlots.map((time) => {
               const { calls: slotCalls, conflicted } = getSlotStatus(time);
               return (
@@ -243,49 +232,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onBackToHome }) => {
           </div>
         )}
 
-        {/* Stats */}
-        <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Daily Summary
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {daysCalls.length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Total Calls
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {daysCalls.filter(c => c.type === 'onboarding').length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Onboarding
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {daysCalls.filter(c => c.type === 'followup').length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Follow-ups
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">
-                {timeSlots.length - daysCalls.reduce((acc, call) => acc + getSlotsNeeded(call.type), 0)}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Available
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+       
 
-      {/* Booking Modal */}
       <BookingModal
         isOpen={bookingModalOpen}
         onClose={() => {
@@ -297,6 +245,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onBackToHome }) => {
         selectedDate={selectedDateString}
         loading={loading}
       />
+
+      <Footer/>
     </div>
   );
 };

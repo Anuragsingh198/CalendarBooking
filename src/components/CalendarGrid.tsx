@@ -10,6 +10,9 @@ interface CalendarGridProps {
   onDateSelect: (date: Date) => void;
   calls: Call[];
 }
+const POPUP_WIDTH = 320;
+const POPUP_HEIGHT = 400;
+const OFFSET = 10;
 
 interface DatePopupProps {
   date: Date;
@@ -19,39 +22,60 @@ interface DatePopupProps {
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }
-
-const DatePopup: React.FC<DatePopupProps> = ({ 
-  date, 
-  calls, 
-  onClose, 
-  position, 
-  onMouseEnter, 
-  onMouseLeave 
+const DatePopup: React.FC<DatePopupProps> = ({
+  date,
+  calls,
+  onClose,
+  position,
+  onMouseEnter,
+  onMouseLeave
 }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [popupPosition, setPopupPosition] = useState({ left: 0, top: 0 });
 
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
+useEffect(() => {
+  const { innerWidth } = window;
+
+  let left = position.x;
+  let top = position.y + OFFSET; 
+
+  if (left + POPUP_WIDTH > innerWidth) {
+    left = position.x - POPUP_WIDTH -  230 - OFFSET; 
+  }
+
+  if (left < OFFSET) left = 100 + OFFSET;
+
+
+  setPopupPosition(prev => {
+    if (prev.left !== left || prev.top !== top) {
+      return { left, top };
+    }
+    return prev;
+  });
+
+  setIsVisible(true);
+}, [position]);
+
+
 
   const timeSlots = generateTimeSlots();
   const daysCalls = getCallsForDate(calls, format(date, 'yyyy-MM-dd'));
-  
+
   const getSlotStatus = (time: string) => {
     const slotCalls = daysCalls.filter(call => {
       if (call.time === time) return true;
-      
+
       const callSlotsNeeded = getSlotsNeeded(call.type);
       const callStartIndex = timeSlots.indexOf(call.time);
       const currentSlotIndex = timeSlots.indexOf(time);
-      
+
       if (callStartIndex !== -1 && currentSlotIndex !== -1) {
         return currentSlotIndex >= callStartIndex && currentSlotIndex < callStartIndex + callSlotsNeeded;
       }
-      
+
       return false;
     });
-    
+
     return slotCalls.length > 0 ? slotCalls[0] : null;
   };
 
@@ -60,10 +84,8 @@ const DatePopup: React.FC<DatePopupProps> = ({
 
   return (
     <>
-      {/* Backdrop */}
       <div className="fixed inset-0 z-40 pointer-events-none" />
-      
-      {/* Popup */}
+
       <div
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
@@ -72,8 +94,8 @@ const DatePopup: React.FC<DatePopupProps> = ({
           isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         )}
         style={{
-          left: Math.min(position.x, window.innerWidth - 320),
-          top: Math.min(position.y, window.innerHeight - 400),
+          left: popupPosition.left,
+          top: popupPosition.top
         }}
       >
         <div className="mb-4">
@@ -86,7 +108,6 @@ const DatePopup: React.FC<DatePopupProps> = ({
         </div>
 
         <div className="space-y-4">
-          {/* Summary Stats */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
               <div className="text-lg font-bold text-green-600 dark:text-green-400">
@@ -106,7 +127,6 @@ const DatePopup: React.FC<DatePopupProps> = ({
             </div>
           </div>
 
-          {/* Booked Slots */}
           {bookedSlots.length > 0 && (
             <div>
               <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
@@ -116,7 +136,7 @@ const DatePopup: React.FC<DatePopupProps> = ({
                 {bookedSlots.map(time => {
                   const call = getSlotStatus(time);
                   if (!call) return null;
-                  
+
                   return (
                     <div
                       key={time}
@@ -140,7 +160,6 @@ const DatePopup: React.FC<DatePopupProps> = ({
             </div>
           )}
 
-          {/* Available Slots Preview */}
           {availableSlots.length > 0 && (
             <div>
               <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
@@ -175,7 +194,6 @@ const DatePopup: React.FC<DatePopupProps> = ({
     </>
   );
 };
-
 const CalendarGrid: React.FC<CalendarGridProps> = ({ selectedDate, onDateSelect, calls }) => {
   const [currentMonth, setCurrentMonth] = useState(selectedDate);
   const [popupData, setPopupData] = useState<{
@@ -211,7 +229,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ selectedDate, onDateSelect,
       y: rect.top
     };
 
-    // Only update if different date or not visible
     if (!popupData || popupData.date.getTime() !== date.getTime() || !popupData.visible) {
       setPopupData({
         date,
@@ -243,7 +260,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ selectedDate, onDateSelect,
     setPopupData(null);
   };
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (hideTimeout) {
@@ -259,7 +275,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ selectedDate, onDateSelect,
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      {/* Calendar Header */}
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={goToPreviousMonth}
@@ -280,7 +295,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ selectedDate, onDateSelect,
         </button>
       </div>
 
-      {/* Days of Week */}
       <div className="grid grid-cols-7 gap-1 mb-2">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
           <div key={day} className="p-2 text-center text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -289,7 +303,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ selectedDate, onDateSelect,
         ))}
       </div>
 
-      {/* Calendar Days */}
       <div className="grid grid-cols-7 gap-1">
         {days.map(day => {
           const callsCount = getDateCallsCount(day);
@@ -316,7 +329,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ selectedDate, onDateSelect,
             >
               <span>{format(day, 'd')}</span>
               
-              {/* Call indicator */}
               {callsCount > 0 && (
                 <div className={clsx(
                   'absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs flex items-center justify-center font-medium',
@@ -332,7 +344,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ selectedDate, onDateSelect,
         })}
       </div>
 
-      {/* Date Hover Popup */}
       {popupData && popupData.visible && (
         <DatePopup
           date={popupData.date}

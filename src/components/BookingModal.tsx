@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { XMarkIcon, MagnifyingGlassIcon, UserIcon, PhoneIcon } from '@heroicons/react/24/outline';
-import { Client, BookingFormData } from '../types';
-import { DUMMY_CLIENTS } from '../data/clients';
+import {BookingFormData } from '../types';
+// import { DUMMY_CLIENTS } from '../data/clients';
 import { formatTimeSlot } from '../utils/timeSlots';
 import clsx from 'clsx';
 
@@ -12,6 +12,12 @@ interface BookingModalProps {
   selectedTime: string;
   selectedDate: string;
   loading?: boolean;
+}
+
+interface Client{
+  _id:string;
+  clientName:string, 
+  clientPhone:string,
 }
 
 const BookingModal: React.FC<BookingModalProps> = ({
@@ -27,19 +33,33 @@ const BookingModal: React.FC<BookingModalProps> = ({
   const [callType, setCallType] = useState<'onboarding' | 'followup'>('followup');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
 
-  const filteredClients = useMemo(() => {
-    return DUMMY_CLIENTS.filter(client =>
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.phone.includes(searchTerm)
-    );
-  }, [searchTerm]);
+
+const filteredClients = useMemo(() => {
+  const stored = localStorage.getItem('clients');
+  let clients: Client[] = [];
+
+  try {
+    const parsed = stored ? JSON.parse(stored) : [];
+    if (Array.isArray(parsed)) {
+      clients = parsed;
+    }
+  } catch (err) {
+    console.error("Failed to parse clients from localStorage", err);
+  }
+
+  return clients.filter(client =>
+    client.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.clientPhone.includes(searchTerm)
+  );
+}, [searchTerm]);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClient) return;
 
     const formData: BookingFormData = {
-      clientId: selectedClient.id,
+      clientId: selectedClient._id,
       callType,
       date: selectedDate,
       time: selectedTime
@@ -50,7 +70,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
   const handleClientSelect = (client: Client) => {
     setSelectedClient(client);
-    setSearchTerm(client.name);
+    setSearchTerm(client.clientName);
     setShowClientDropdown(false);
   };
 
@@ -66,15 +86,13 @@ const BookingModal: React.FC<BookingModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        {/* Background overlay */}
         <div
           className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
           onClick={onClose}
         />
 
-        {/* Modal panel */}
         <div className="relative inline-block transform overflow-hidden rounded-xl bg-white dark:bg-gray-800 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle">
-          {/* Header */}
+
           <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Book New Call
@@ -87,7 +105,6 @@ const BookingModal: React.FC<BookingModalProps> = ({
             </button>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* Time and Date Display */}
             <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
@@ -98,8 +115,6 @@ const BookingModal: React.FC<BookingModalProps> = ({
                 </span>
               </div>
             </div>
-
-            {/* Call Type Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Call Type
@@ -135,7 +150,6 @@ const BookingModal: React.FC<BookingModalProps> = ({
               </div>
             </div>
 
-            {/* Client Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Select Client
@@ -157,13 +171,12 @@ const BookingModal: React.FC<BookingModalProps> = ({
                   />
                 </div>
 
-                {/* Dropdown */}
                 {showClientDropdown && searchTerm && (
                   <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     {filteredClients.length > 0 ? (
                       filteredClients.map((client) => (
                         <button
-                          key={client.id}
+                          key={client._id}
                           type="button"
                           onClick={() => handleClientSelect(client)}
                           className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center space-x-3 border-b border-gray-100 dark:border-gray-600 last:border-b-0"
@@ -173,11 +186,11 @@ const BookingModal: React.FC<BookingModalProps> = ({
                           </div>
                           <div className="flex-1">
                             <div className="font-medium text-gray-900 dark:text-white">
-                              {client.name}
+                              {client.clientName}
                             </div>
                             <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
                               <PhoneIcon className="w-3 h-3 mr-1" />
-                              {client.phone}
+                              {client.clientPhone}
                             </div>
                           </div>
                         </button>
@@ -191,7 +204,6 @@ const BookingModal: React.FC<BookingModalProps> = ({
                 )}
               </div>
 
-              {/* Selected Client Display */}
               {selectedClient && (
                 <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center space-x-3">
                   <div className="flex items-center justify-center w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full">
@@ -199,17 +211,16 @@ const BookingModal: React.FC<BookingModalProps> = ({
                   </div>
                   <div>
                     <div className="font-medium text-gray-900 dark:text-white">
-                      {selectedClient.name}
+                      {selectedClient.clientName}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {selectedClient.phone}
+                      {selectedClient.clientPhone}
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Action Buttons */}
             <div className="flex space-x-3 pt-4">
               <button
                 type="button"
