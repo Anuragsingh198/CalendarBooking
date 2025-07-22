@@ -4,7 +4,7 @@ import Header from './components/Header';
 import HomePage from './components/HomePage';
 import CalendarView from './components/CalendarView';
 import axios from 'axios';
-
+const serverUrl = import.meta.env.VITE_SERVER_URL;
 type AppView = 'home' | 'calendar';
 interface Client{
   _id:string;
@@ -26,7 +26,7 @@ function App() {
 const getClients = async (): Promise<Client[]> => {
   console.log("Fetching clients...");
 
-  const {data} = await axios.get("http://localhost:5001/api/clients");
+  const {data} = await axios.get(`${serverUrl}/api/clients`);
   if (!data.success) {
     throw new Error('Failed to fetch clients');
   }

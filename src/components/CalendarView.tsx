@@ -7,7 +7,7 @@ import { Call, BookingFormData, TimeSlot as TimeSlotType } from '../types';
 import { generateTimeSlots, getCallsForDate, checkSlotAvailability, getSlotsNeeded } from '../utils/timeSlots';
 import axios from 'axios';
 import Footer from './Footer';
-
+const serverUrl = import.meta.env.VITE_SERVER_URL;
 interface CalendarViewProps {
   onBackToHome: () => void;
 }
@@ -29,7 +29,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ onBackToHome }) => {
 const fetchCalls = async (date: string) => {
   setLoading(true);
   try {
-    const { data } = await axios.get(`http://localhost:5001/api/calls?date=${date}`);
+    const { data } = await axios.get(`${serverUrl}/api/calls?date=${date}`);
     setCalls(data.calls);  
   } catch (error) {
     console.error('Failed to fetch calls:', error);
@@ -51,7 +51,7 @@ const fetchCalls = async (date: string) => {
 
     const payload = { ...data, client };
     // console.log("before  api call is called : " , )
-    const response = await axios.post('http://localhost:5001/api/calls', payload);
+    const response = await axios.post(`${serverUrl}/api/calls`, payload);
 
     setCalls(prev => Array.isArray(prev) ? [...prev, response.data.call] : [response.data.call]);
     setBookingModalOpen(false);
@@ -73,7 +73,7 @@ const fetchCalls = async (date: string) => {
 
 const handleDeleteCall = async (callId: string) => {
   try {
-    await axios.delete(`http://localhost:5001/api/calls/${callId}`);
+    await axios.delete(`${serverUrl}/api/calls/${callId}`);
     setCalls(prev => prev.filter(c => c._id !== callId));  
   } catch (error) {
     console.error('Failed to delete call:', error);
